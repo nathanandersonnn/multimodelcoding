@@ -1,7 +1,7 @@
 import ollama
 import subprocess
 import sys
-import os
+import json
 
 # def create_or_write_files
 def call_claude_setup(prompt, model_name = "claude-opus-5-5"):
@@ -41,5 +41,27 @@ def main():
     print("Asking claude to delegate tasks...")
     raw_plan = call_claude_setup("Generate a wordle game in c++")
     print(raw_plan)
+    if raw_plan == "[]":
+        print("Failed to fetch a valid plan")
+        return 
+    try:
+        plan = json.loads(raw_plan)
+        model_mapping = {
+            "gemma": gemma,
+            "gemini": gemini,
+            "gpt": gpt,
+            "opus": opus
+        }
+        for step in plan:
+            target_model = step.get("model", "").lower()
+            role = step.get("role", "")
+            task = step.get("task", "")
+            if target_model in model_mapping:
+                model_mapping[target_model](role, task)
+            else:
+                print(f"Unknown model assignment skipped: {target_model}")
+    except json.JSONDecodeError:
+        print("Error: response not clean JSON")
+        print(raw_plan)
 if __name__ == "__main__":
     main()
